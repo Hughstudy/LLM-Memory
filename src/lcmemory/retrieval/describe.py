@@ -71,16 +71,19 @@ class DescribeEngine:
     ) -> list[SubtreeNode]:
         query = text("""
             WITH RECURSIVE subtree AS (
-                SELECT summary_id, parent_summary_id,
-                       0 as depth_from_root, '' as path, 0 as path_seq
-                FROM summary_parent_links WHERE summary_id = :id
-                UNION ALL
-                SELECT sp.summary_id, sp.parent_summary_id,
-                       s.depth_from_root + 1,
-                       s.path || '>' || sp.summary_id::text,
-                       s.path_seq + 1
-                FROM summary_parent_links sp
-                JOIN subtree s ON sp.parent_summary_id = s.summary_id
+                 SELECT summary_id, parent_summary_id,
+                        0 as depth_from_root,
+                        '' as path,
+                        ARRAY[summary_id]::uuid[] as visited_ids
+                 FROM summary_parent_links WHERE summary_id = :id
+                 UNION ALL
+                 SELECT sp.summary_id, sp.parent_summary_id,
+                        s.depth_from_root + 1,
+                        s.path || '>' || sp.summary_id::text,
+                        array_append(s.visited_ids, sp.summary_id)
+                 FROM summary_parent_links sp
+                 JOIN subtree s ON sp.parent_summary_id = s.summary_id
+                 WHERE NOT sp.summary_id = ANY(s.visited_ids)
             )
             SELECT ms.id,
                    COALESCE(sub.depth_from_root, 0) as depth_from_root,
