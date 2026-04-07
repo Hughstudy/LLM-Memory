@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,9 +25,18 @@ class Settings(BaseSettings):
 
     # LLM
     llm_provider: str = "openai"
-    llm_model: str = "gpt-4o"
-    llm_api_key: str = ""
-    llm_base_url: str = "https://api.openai.com/v1"
+    llm_model: str = Field(
+        default="gpt-4o",
+        validation_alias=AliasChoices("LCM_LLM_MODEL", "LCM_OPENAI_MODEL"),
+    )
+    llm_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("LCM_LLM_API_KEY", "LCM_OPENAI_API_KEY"),
+    )
+    llm_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        validation_alias=AliasChoices("LCM_LLM_BASE_URL", "LCM_OPENAI_BASE_URL"),
+    )
     llm_temperature: float = 0.3
     llm_max_tokens: int = 4096
 
