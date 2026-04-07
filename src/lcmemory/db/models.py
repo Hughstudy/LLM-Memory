@@ -4,7 +4,7 @@ import datetime
 import uuid
 from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -80,7 +80,9 @@ class MemorySummary(Base, IdMixin, TimestampMixin):
     behavior_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
     token_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     source_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
-    descendant_raw_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    descendant_raw_count: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default="0"
+    )
     compaction_status: Mapped[CompactionStatus] = mapped_column(
         default=CompactionStatus.ACTIVE, nullable=False
     )
@@ -190,6 +192,7 @@ class CompactionJob(Base, IdMixin):
 
     __table_args__ = (
         Index("ix_jobs_category_status", "category_id", "status"),
+        Index("ix_jobs_status_created", "status", "created_at"),
         Index("ix_jobs_status", "status"),
     )
 
@@ -208,6 +211,7 @@ class DelegationGrant(Base, IdMixin):
     )
 
     __table_args__ = (
+        Index("ix_grants_revoked_expires", "revoked_at", "expires_at"),
         Index("ix_grants_expires", "expires_at"),
         Index("ix_grants_revoked", "revoked_at"),
     )
