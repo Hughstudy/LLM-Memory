@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lcmemory.db.models import RawMemory
@@ -77,8 +77,6 @@ class RawMemoryRepository:
         return list(result.scalars().all())
 
     async def count_active_by_category(self, session: AsyncSession, category_id: uuid.UUID) -> int:
-        from sqlalchemy import func
-
         result = await session.execute(
             select(func.count())
             .select_from(RawMemory)
@@ -104,6 +102,7 @@ class RawMemoryRepository:
             )
             .order_by(RawMemory.created_at.asc())
             .limit(limit)
+            .with_for_update(skip_locked=True)
         )
         return list(result.scalars().all())
 

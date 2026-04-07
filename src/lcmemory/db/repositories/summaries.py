@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lcmemory.db.models import MemorySummary, SummaryParentLink, SummaryRawMemoryLink
@@ -72,6 +72,27 @@ class SummaryRepository:
                 MemorySummary.compaction_status == CompactionStatus.ACTIVE,
             )
             .order_by(MemorySummary.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def list_eligible_for_compaction(
+        self,
+        session: AsyncSession,
+        category_id: uuid.UUID,
+        level: int,
+        *,
+        limit: int = 15,
+    ) -> list[MemorySummary]:
+        result = await session.execute(
+            select(MemorySummary)
+            .where(
+                MemorySummary.category_id == category_id,
+                MemorySummary.level == level,
+                MemorySummary.compaction_status == CompactionStatus.ACTIVE,
+            )
+            .order_by(MemorySummary.created_at.asc())
+            .limit(limit)
+            .with_for_update(skip_locked=True)
         )
         return list(result.scalars().all())
 
@@ -160,13 +181,17 @@ class SummaryRepository:
         summary_id: uuid.UUID,
         raw_memory_ids: list[uuid.UUID],
     ) -> None:
-        for position, raw_memory_id in enumerate(raw_memory_ids):
-            link = SummaryRawMemoryLink(
-                summary_id=summary_id,
-                raw_memory_id=raw_memory_id,
-                position=position,
-            )
-            session.add(link)
+        await session.execute(
+            insert(SummaryRawMemoryLink),
+            [
+                {
+                    "summary_id": summary_id,
+                    "raw_memory_id": raw_memory_id,
+                    "position": position,
+                }
+                for position, raw_memory_id in enumerate(raw_memory_ids)
+            ],
+        )
         await session.flush()
 
     async def add_parent_links(
@@ -175,13 +200,17 @@ class SummaryRepository:
         summary_id: uuid.UUID,
         parent_summary_ids: list[uuid.UUID],
     ) -> None:
-        for position, parent_summary_id in enumerate(parent_summary_ids):
-            link = SummaryParentLink(
-                summary_id=summary_id,
-                parent_summary_id=parent_summary_id,
-                position=position,
-            )
-            session.add(link)
+        await session.execute(
+            insert(SummaryParentLink),
+            [
+                {
+                    "summary_id": summary_id,
+                    "parent_summary_id": parent_summary_id,
+                    "position": position,
+                }
+                for position, parent_summary_id in enumerate(parent_summary_ids)
+            ],
+        )
         await session.flush()
 
     async def get_parent_ids(self, session: AsyncSession, summary_id: uuid.UUID) -> list[uuid.UUID]:

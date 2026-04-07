@@ -24,7 +24,6 @@ class CompactionSelector:
     async def select_summary_batch(
         self, session: AsyncSession, category_id: uuid.UUID, level: int, limit: int = 15
     ) -> list[MemorySummary]:
-        summaries = await self.summary_repo.list_active_by_category_and_level(
-            session, category_id, level
+        return await self.summary_repo.list_eligible_for_compaction(
+            session, category_id, level, limit=limit
         )
-        return summaries[:limit]
