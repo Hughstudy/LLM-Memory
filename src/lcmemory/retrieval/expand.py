@@ -6,7 +6,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from lcmemory.db.models import MemorySummary, RawMemory
-from lcmemory.domain.enums import SummaryKind
+from lcmemory.domain.enums import NodeType, SummaryKind
 from lcmemory.domain.schemas import ExpandItem, ExpandParams, ExpandResult
 
 
@@ -79,7 +79,7 @@ class ExpandEngine:
         items.append(
             ExpandItem(
                 id=str(summary.id),
-                node_type="summary",
+                node_type=NodeType.SUMMARY,
                 depth=depth,
                 content=content,
             )
@@ -135,7 +135,7 @@ class ExpandEngine:
                 items.append(
                     ExpandItem(
                         id=str(raw_mem.id),
-                        node_type="raw_memory",
+                        node_type=NodeType.RAW_MEMORY,
                         depth=depth + 1,
                         content=raw_content,
                         fact=raw_mem.fact,
