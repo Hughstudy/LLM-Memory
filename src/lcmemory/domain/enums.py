@@ -51,3 +51,8 @@ class SearchMode(enum.StrEnum):
 
     FULL_TEXT = "full_text"
     ILIKE = "ilike"
+
+
+class NodeType(enum.StrEnum):
+    RAW_MEMORY = "raw_memory"
+    SUMMARY = "summary"

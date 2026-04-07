@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from pydantic import ValidationError
+
 from lcmemory.compaction.policy import CompactionPlan, CompactionPolicy, should_compact
-from lcmemory.domain.enums import CompactionSourceType
+from lcmemory.domain.enums import CompactionSourceType, NodeType, SearchMode, SearchScope
 from lcmemory.ingestion.validators import build_content_text, validate_memory_input
 
 
@@ -79,7 +81,6 @@ def test_add_memory_request_validation():
 
 def test_add_memory_request_rejects_empty():
     import pytest
-    from pydantic import ValidationError
 
     from lcmemory.domain.schemas import AddMemoryRequest
 
@@ -87,14 +88,32 @@ def test_add_memory_request_rejects_empty():
         AddMemoryRequest(category_name="", fact="f", comment="c", behavior="b")
 
 
+def test_add_memory_request_rejects_whitespace_only():
+    import pytest
+
+    from lcmemory.domain.schemas import AddMemoryRequest
+
+    with pytest.raises(ValidationError):
+        AddMemoryRequest(category_name="test", fact="   ", comment="c", behavior="b")
+
+
 def test_grep_params_defaults():
     from lcmemory.domain.schemas import GrepParams
 
     params = GrepParams(pattern="test")
-    assert params.mode == "full_text"
-    assert params.scope == "both"
+    assert params.mode == SearchMode.FULL_TEXT
+    assert params.scope == SearchScope.BOTH
     assert params.limit == 20
     assert params.category is None
+
+
+def test_grep_params_rejects_non_positive_limit():
+    import pytest
+
+    from lcmemory.domain.schemas import GrepParams
+
+    with pytest.raises(ValidationError):
+        GrepParams(pattern="test", limit=0)
 
 
 def test_expand_params_defaults():
@@ -111,7 +130,7 @@ def test_memory_snippet_creation():
 
     snippet = MemorySnippet(
         id="raw_123",
-        node_type="raw_memory",
+        node_type=NodeType.RAW_MEMORY,
         category="auth",
         snippet="Use JWT tokens",
     )
