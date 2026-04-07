@@ -33,45 +33,51 @@ class MemoryIngestionService:
         validate_memory_input(fact, comment, behavior)
 
         async with self.session_factory() as session:
-            category = await self.category_repo.get_or_create(session, name=category_name)
-
-            content_text = build_content_text(fact, comment, behavior)
-
-            settings = get_settings()
             try:
-                import tiktoken
+                category = await self.category_repo.get_or_create(session, name=category_name)
 
-                encoding = tiktoken.get_encoding(settings.token_counter_encoding)
-                token_count = len(encoding.encode(content_text))
-            except Exception:
-                token_count = len(content_text) // 4
+                content_text = build_content_text(fact, comment, behavior)
 
-            raw_memory = await self.raw_memory_repo.create(
-                session,
-                category_id=category.id,
-                fact=fact,
-                comment=comment,
-                behavior=behavior,
-                content_text=content_text,
-                token_count=token_count,
-                metadata_json=metadata,
-            )
+                settings = get_settings()
+                try:
+                    import tiktoken
 
-            active_count = await self.raw_memory_repo.count_active_by_category(session, category.id)
-            policy = CompactionPolicy(threshold=settings.compaction_threshold)
-            if should_compact(active_count, policy) and not await self.job_repo.has_open_job(
-                session, category.id, CompactionSourceType.RAW
-            ):
-                await self.job_repo.create(
+                    encoding = tiktoken.get_encoding(settings.token_counter_encoding)
+                    token_count = len(encoding.encode(content_text))
+                except Exception:
+                    token_count = len(content_text) // 4
+
+                raw_memory = await self.raw_memory_repo.create(
                     session,
                     category_id=category.id,
-                    source_type=CompactionSourceType.RAW,
-                    input_count=min(active_count, settings.compaction_threshold),
-                    llm_model=settings.llm_model,
-                    prompt_version="v1",
+                    fact=fact,
+                    comment=comment,
+                    behavior=behavior,
+                    content_text=content_text,
+                    token_count=token_count,
+                    metadata_json=metadata,
                 )
 
-            await session.commit()
+                active_count = await self.raw_memory_repo.count_active_by_category(
+                    session, category.id
+                )
+                policy = CompactionPolicy(threshold=settings.compaction_threshold)
+                if should_compact(active_count, policy) and not await self.job_repo.has_open_job(
+                    session, category.id, CompactionSourceType.RAW
+                ):
+                    await self.job_repo.create(
+                        session,
+                        category_id=category.id,
+                        source_type=CompactionSourceType.RAW,
+                        input_count=min(active_count, settings.compaction_threshold),
+                        llm_model=settings.llm_model,
+                        prompt_version="v1",
+                    )
+
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
 
             return RawMemoryDTO.model_validate(raw_memory)
 

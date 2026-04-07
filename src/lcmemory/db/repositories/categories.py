@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lcmemory.db.models import MemoryCategory
@@ -47,5 +48,11 @@ class CategoryRepository:
     ) -> MemoryCategory:
         category = await self.get_by_name(session, name)
         if category is None:
-            category = await self.create(session, name=name, description=description)
+            try:
+                category = await self.create(session, name=name, description=description)
+            except IntegrityError:
+                await session.rollback()
+                category = await self.get_by_name(session, name)
+                if category is None:
+                    raise
         return category
