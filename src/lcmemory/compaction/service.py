@@ -34,7 +34,7 @@ class CompactionService:
         )
         self.selector = CompactionSelector()
         self.category_repo = CategoryRepository()
-        self.llm_client = LLMClient(self.settings)
+        self.llm_client = LLMClient(self.settings, max_retries=self.policy.max_retries)
         self.raw_memory_repo = RawMemoryRepository()
         self.summary_repo = SummaryRepository()
         self.job_repo = CompactionJobRepository()
