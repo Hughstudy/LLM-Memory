@@ -68,7 +68,8 @@ TOOL_DEFINITIONS: list[ToolDefinition] = [
     ToolDefinition(
         name="lcm_expand",
         description=(
-            "Walk the summary DAG upward to recover detailed context from summarized memories"
+            "Walk the summary DAG upward through derived summaries and optionally "
+            "include raw memories for visited leaf summaries"
         ),
         input_schema={
             "type": "object",
@@ -81,12 +82,12 @@ TOOL_DEFINITIONS: list[ToolDefinition] = [
                 "max_depth": {
                     "type": "integer",
                     "default": 3,
-                    "description": "Maximum depth to traverse up the DAG",
+                    "description": "Maximum depth to traverse upward through derived summaries",
                 },
                 "include_messages": {
                     "type": "boolean",
                     "default": True,
-                    "description": "Whether to include raw memories for leaf summaries",
+                    "description": "Whether to include raw memories for visited leaf summaries",
                 },
                 "token_cap": {
                     "type": "integer",

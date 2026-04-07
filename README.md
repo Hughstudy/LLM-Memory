@@ -43,7 +43,7 @@ When a category accumulates **15 uncompacted** items, the system sends them to a
 |------|---------|------|
 | `lcm_grep` | Full-text / ILIKE search across raw memories and summaries | Cheap |
 | `lcm_describe` | Inspect a node and its DAG neighborhood (parents, children, subtree manifest) | Medium |
-| `lcm_expand` | Walk provenance from summaries down to raw evidence with token cap | Higher |
+| `lcm_expand` | Walk upward through derived summaries and optionally include raw memories for visited leaf summaries, with a token cap | Higher |
 | `lcm_expand_query` | Delegated deep recall — sub-agent uses bounded tools to answer a query | Highest |
 
 The design keeps common retrieval cheap and pushes expensive reconstruction into bounded, scoped workflows.
