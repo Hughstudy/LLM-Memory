@@ -86,7 +86,7 @@ class ExpandEngine:
         )
 
         parent_result = await session.execute(
-            text("SELECT summary_id FROM summary_parent_links WHERE parent_summary_id = :id"),
+            text("SELECT parent_summary_id FROM summary_parent_links WHERE summary_id = :id"),
             {"id": summary_id},
         )
         parent_ids = [row[0] for row in parent_result.fetchall()]
